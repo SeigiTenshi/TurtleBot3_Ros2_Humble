@@ -15,7 +15,6 @@
 # limitations under the License.
 #
 # Authors: Ryan Shim, Gilbert
-# Modify by : Anthony Decron
 
 from geometry_msgs.msg import Twist
 from rclpy.node import Node
@@ -82,18 +81,32 @@ class Turtlebot3ObstacleDetection(Node):
             self.detect_obstacle()
            
     def detect_obstacle(self):
+        ranges = self.scan_ranges
+        #self.get_logger().info(f'Range: {len(ranges)}')
         twist = Twist()
         safety_distance_min = 0.3  # unit: 
         distance_max = 3.5
-        filtered_ranges = [range_value for range_value in self.scan_ranges if 0.0 <= range_value <= distance_max]
+        front_ranges = self.scan_ranges[-30:] + self.scan_ranges[:30]
+        back_ranges = self.scan_ranges[150:230]
+        #self.get_logger().info(f'Range: {back_ranges}')
+        #filtered_ranges = [range_value for range_value in self.scan_ranges if 0.0 <= range_value <= distance_max]
         # Filtrer les valeurs inférieures à 0.11 et supérieures à 0.3
-        valid_values = [value for value in filtered_ranges if 0.11 <= value <= 0.3]
-        if len(valid_values)==0:
-            twist.linear.x = self.linear_velocity
-            twist.angular.z = self.angular_velocity
-        else:
-            twist.linear.x = 0.0
-            twist.angular.z = 0.0
-            self.get_logger().info(f'Obstacle detected at distances: {valid_values}')
+        front_valid_values = [value for value in front_ranges if 0.11 <= value <= 0.3]
+        back_valid_values = [value for value in back_ranges if 0.08 <= value <= 0.3]
+        #self.get_logger().info(f'Range: {len(back_valid_values)}')
+        if self.linear_velocity > 0:
+           if len(front_valid_values)==0:
+              twist.linear.x = self.linear_velocity
+              twist.angular.z = self.angular_velocity
+           else:
+               twist.linear.x = 0.0
+               twist.angular.z = self.angular_velocity
+        elif self.linear_velocity < 0:
+               if (len(back_valid_values))==0:
+                  twist.linear.x = self.linear_velocity
+                  twist.angular.z = self.angular_velocity
+               else:
+                  twist.linear.x = 0.0
+                  twist.angular.z = self.angular_velocity
 
         self.cmd_vel_pub.publish(twist)
