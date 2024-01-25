@@ -108,5 +108,5 @@ class Turtlebot3ObstacleDetection(Node):
                else:
                   twist.linear.x = 0.0
                   twist.angular.z = self.angular_velocity
-
+        twist.angular.z = self.angular_velocity
         self.cmd_vel_pub.publish(twist)
